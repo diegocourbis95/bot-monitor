@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#080810" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bot Monitor" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Bot Monitor — Diego</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#080810; --bg2:#0e0e1a; --surface:#12121f; --border:#1c1c30; --border2:#252540;
+      --cyan:#00d4ff; --cyan-dim:rgba(0,212,255,0.10); --cyan-glow:rgba(0,212,255,0.30);
+      --green:#00ff88; --green-dim:rgba(0,255,136,0.08); --green-glow:rgba(0,255,136,0.35);
+      --red:#ff3355; --red-dim:rgba(255,51,85,0.08); --red-glow:rgba(255,51,85,0.35);
+      --yellow:#ffd020; --yellow-dim:rgba(255,208,32,0.08); --yellow-glow:rgba(255,208,32,0.35);
+      --text:#d8d8f0; --muted:#44445a; --muted2:#2a2a45;
+      --font-mono:'Share Tech Mono',monospace; --font:'Barlow',sans-serif; --font-cond:'Barlow Condensed',sans-serif;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100dvh;overflow-x:hidden;}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);background-size:36px 36px;pointer-events:none;z-index:0;}
+    .wrap{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:20px 16px 40px;display:flex;flex-direction:column;gap:18px;}
+    header{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid var(--border);}
+    .hdr-left{display:flex;align-items:center;gap:12px;}
+    .hdr-icon{width:38px;height:38px;border:1.5px solid var(--cyan);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 0 10px var(--cyan-glow),inset 0 0 8px rgba(0,212,255,0.06);}
+    .hdr-title{font-family:var(--font-cond);font-size:20px;font-weight:700;letter-spacing:2.5px;color:var(--cyan);text-shadow:0 0 10px var(--cyan-glow);}
+    .hdr-sub{font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:1px;}
+    .hdr-right{text-align:right;}
+    .hdr-clock{font-family:var(--font-mono);font-size:13px;color:var(--cyan);}
+    .hdr-date{font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:2px;}
+
+    #notif-banner{display:none;background:rgba(255,208,32,0.08);border:1px solid var(--yellow);border-radius:10px;padding:12px 16px;align-items:center;gap:12px;}
+    #notif-banner span{flex:1;font-size:12px;font-weight:600;letter-spacing:1px;color:var(--yellow);}
+    #notif-btn{background:var(--yellow);border:none;border-radius:6px;color:var(--bg);font-family:var(--font-cond);font-size:12px;font-weight:700;padding:6px 14px;letter-spacing:1px;cursor:pointer;}
+    #notif-status{font-family:var(--font-mono);font-size:9px;text-align:center;letter-spacing:1px;display:none;padding:4px 0;}
+    #notif-status.granted{color:var(--green);}
+    #notif-status.denied{color:var(--red);}
+
+    #install-banner{display:none;background:var(--cyan-dim);border:1px solid var(--cyan);border-radius:10px;padding:12px 16px;align-items:center;gap:12px;}
+    #install-banner span{flex:1;font-size:12px;font-weight:600;letter-spacing:1px;color:var(--cyan);}
+    #install-btn{background:var(--cyan);border:none;border-radius:6px;color:var(--bg);font-family:var(--font-cond);font-size:12px;font-weight:700;padding:6px 14px;letter-spacing:1px;cursor:pointer;}
+
+    .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+    .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center;}
+    .sum-val{font-family:var(--font-mono);font-size:22px;line-height:1;}
+    .sum-val.all-ok{color:var(--green);text-shadow:0 0 8px var(--green-glow);}
+    .sum-val.has-fail{color:var(--red);text-shadow:0 0 8px var(--red-glow);}
+    .sum-val.neutral{color:var(--cyan);}
+    .sum-label{font-family:var(--font-mono);font-size:8px;color:var(--muted);letter-spacing:1.5px;margin-top:5px;}
+
+    .section-label{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+    .agent-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color 0.4s,box-shadow 0.4s;}
+    .agent-card.online{border-color:rgba(0,255,136,0.25);box-shadow:0 0 24px rgba(0,255,136,0.05);}
+    .agent-card.offline{border-color:rgba(255,51,85,0.25);box-shadow:0 0 24px rgba(255,51,85,0.05);}
+    .agent-card.partial{border-color:rgba(255,208,32,0.25);box-shadow:0 0 24px rgba(255,208,32,0.05);}
+
+    .agent-head{padding:14px 16px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);}
+    .agent-emoji{font-size:22px;flex-shrink:0;}
+    .agent-info{flex:1;min-width:0;}
+    .agent-name{font-family:var(--font-cond);font-size:16px;font-weight:700;letter-spacing:1.5px;color:var(--text);}
+    .agent-desc{font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:2px;}
+    .agent-badge{flex-shrink:0;display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:20px;border:1px solid currentColor;font-family:var(--font-cond);font-size:13px;font-weight:600;letter-spacing:1.5px;transition:all 0.4s;}
+    .agent-badge.online{color:var(--green);background:var(--green-dim);box-shadow:0 0 10px var(--green-glow);}
+    .agent-badge.offline{color:var(--red);background:var(--red-dim);box-shadow:0 0 10px var(--red-glow);}
+    .agent-badge.partial{color:var(--yellow);background:var(--yellow-dim);box-shadow:0 0 10px var(--yellow-glow);}
+    .agent-badge.checking{color:var(--muted);background:transparent;border-color:var(--muted2);}
+    .badge-dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+    .agent-badge.online .badge-dot{animation:blink 2s ease-in-out infinite;}
+    .agent-badge.checking .badge-dot{animation:blink 0.5s ease-in-out infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+
+    .agent-msgs{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:rgba(0,212,255,0.03);}
+    .msgs-icon{font-size:14px;}
+    .msgs-label{font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:1px;flex:1;}
+    .msgs-val{display:flex;align-items:baseline;gap:4px;}
+    .msgs-count{font-family:var(--font-mono);font-size:20px;font-weight:600;color:var(--cyan);line-height:1;}
+    .msgs-sub{font-family:var(--font-mono);font-size:8px;color:var(--muted);}
+
+    .ep-list{padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+    .ep-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;transition:border-color 0.3s;}
+    .ep-row.online{border-color:rgba(0,255,136,0.15);}
+    .ep-row.offline{border-color:rgba(255,51,85,0.15);}
+    .ep-indicator{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background 0.3s,box-shadow 0.3s;}
+    .ep-indicator.online{background:var(--green);box-shadow:0 0 5px var(--green-glow);animation:blink 2s ease-in-out infinite;}
+    .ep-indicator.offline{background:var(--red);box-shadow:0 0 5px var(--red-glow);}
+    .ep-indicator.checking{background:var(--muted2);animation:blink 0.5s ease-in-out infinite;}
+    .ep-label{font-family:var(--font-mono);font-size:10px;color:var(--muted);flex-shrink:0;min-width:56px;}
+    .ep-url{flex:1;min-width:0;font-family:var(--font-mono);font-size:9px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .ep-right{flex-shrink:0;text-align:right;}
+    .ep-status{font-family:var(--font-mono);font-size:10px;}
+    .ep-status.online{color:var(--green);}
+    .ep-status.offline{color:var(--red);}
+    .ep-status.checking{color:var(--muted);}
+    .ep-lat{font-family:var(--font-mono);font-size:8px;color:var(--muted);margin-top:1px;}
+
+    .agent-foot{padding:8px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .agent-uptime{font-family:var(--font-mono);font-size:9px;color:var(--muted);}
+    .agent-uptime span{color:var(--cyan);}
+    .agent-last{font-family:var(--font-mono);font-size:9px;color:var(--muted);}
+
+    .controls{display:flex;flex-direction:column;gap:10px;}
+    .auto-row{display:flex;align-items:center;gap:10px;}
+    .auto-label{font-family:var(--font-mono);font-size:9px;color:var(--muted);white-space:nowrap;letter-spacing:1px;}
+    .auto-bar{flex:1;height:2px;background:var(--border);border-radius:2px;overflow:hidden;}
+    .auto-fill{height:100%;background:var(--cyan);border-radius:2px;transition:width 1s linear;box-shadow:0 0 4px var(--cyan-glow);}
+    .auto-count{font-family:var(--font-mono);font-size:9px;color:var(--cyan);min-width:24px;text-align:right;}
+    .btn-check{width:100%;padding:13px;background:transparent;border:1.5px solid var(--cyan);border-radius:10px;color:var(--cyan);font-family:var(--font-cond);font-size:14px;font-weight:700;letter-spacing:3px;cursor:pointer;transition:background 0.2s,box-shadow 0.2s;text-transform:uppercase;}
+    .btn-check:hover{background:var(--cyan-dim);box-shadow:0 0 16px var(--cyan-glow);}
+    .btn-check:active{transform:scale(0.98);}
+    .btn-check:disabled{opacity:0.35;cursor:not-allowed;}
+
+    .log-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+    .log-hdr{padding:8px 14px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:2px;display:flex;justify-content:space-between;}
+    .log-body{padding:8px 14px;max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
+    .log-entry{font-family:var(--font-mono);font-size:9px;display:flex;gap:8px;align-items:baseline;}
+    .log-t{color:var(--muted2);flex-shrink:0;}
+    .log-entry.ok .log-m{color:var(--green);}
+    .log-entry.fail .log-m{color:var(--red);}
+    .log-entry.warn .log-m{color:var(--yellow);}
+    .log-entry.info .log-m{color:var(--cyan);}
+
+    footer{font-family:var(--font-mono);font-size:8px;color:var(--muted);text-align:center;letter-spacing:1px;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="hdr-left">
+      <div class="hdr-icon">🤖</div>
+      <div>
+        <div class="hdr-title">BOT MONITOR</div>
+        <div class="hdr-sub">PANEL DE AGENTES · DIEGO</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-clock" id="hdr-clock">--:--:--</div>
+      <div class="hdr-date" id="hdr-date">--/--/----</div>
+    </div>
+  </header>
+
+  <div id="notif-banner">
+    <span>🔔 Activar notificaciones push</span>
+    <button id="notif-btn">ACTIVAR</button>
+  </div>
+  <div id="notif-status"></div>
+
+  <div id="install-banner">
+    <span>📲 Instalar como app</span>
+    <button id="install-btn">INSTALAR</button>
+  </div>
+
+  <div class="summary">
+    <div class="sum-card">
+      <div class="sum-val neutral" id="sum-total">—</div>
+      <div class="sum-label">AGENTES</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-val" id="sum-ok">—</div>
+      <div class="sum-label">ONLINE</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-val" id="sum-fail">—</div>
+      <div class="sum-label">OFFLINE</div>
+    </div>
+  </div>
+
+  <div id="agents-container"></div>
+
+  <div class="controls">
+    <div class="auto-row">
+      <div class="auto-label">PRÓXIMO CHECK</div>
+      <div class="auto-bar"><div class="auto-fill" id="auto-fill" style="width:100%"></div></div>
+      <div class="auto-count" id="auto-count">30s</div>
+    </div>
+    <button class="btn-check" id="btn-check" onclick="runAllChecks()">↻ VERIFICAR AHORA</button>
+  </div>
+
+  <div class="log-wrap">
+    <div class="log-hdr">
+      <span>// ACTIVIDAD</span>
+      <span id="log-count">0 eventos</span>
+    </div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+
+  <footer>PANEL PRIVADO · DIEGO COURBIS · SANTIAGO, CHILE</footer>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// AGENTES
+// ══════════════════════════════════════════════════
+const AGENTS = [
+  {
+    id: 'aironbot',
+    name: 'COMERCIAL AIRONBOT',
+    emoji: '🏍',
+    stack: 'Python / FastAPI',
+    endpoints: [
+      { key:'health',  label:'HEALTH',  url:'https://iron.retrogaming.cl/health',  method:'GET', expectAny:false },
+      { key:'webhook', label:'WEBHOOK', url:'https://iron.retrogaming.cl/webhook', method:'GET', expectAny:true  }
+    ]
+  },
+  {
+    id: 'retrogaming',
+    name: 'RETROGAMING SPA',
+    emoji: '🎮',
+    stack: 'n8n / EasyPanel',
+    endpoints: [
+      { key:'webhook', label:'WEBHOOK', url:'https://rrggprueba-n8n.dj1kp9.easypanel.host/webhook/health', method:'GET', expectAny:true }
+    ]
+  }
+];
+
+// ══════════════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════════════
+const SUPABASE = {
+  aironbot: {
+    url: 'https://iqxqxbjuwgmxdemmaasv.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxeHF4Ymp1d2dteGRlbW1hYXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwOTk2NDUsImV4cCI6MjA5MzY3NTY0NX0.zdR0gETzuRo1nj7CLtHj7tcsFnPkg--km1fo_BogtFA',
+    table: 'mensajes'
+  },
+  retrogaming: {
+    url: 'https://txbtmshmtustcrtpjqaj.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4YnRtc2htdHVzdGNydHBqcWFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4OTAyODAsImV4cCI6MjA5MjQ2NjI4MH0.QtiBvL60BvP0fEqZa2cfo1Lc-65U-F0JCAh9jJzeShM',
+    table: 'conversaciones'
+  }
+};
+
+const INTERVAL = 30;
+
+// ══════════════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════════════
+const agentState = {};
+AGENTS.forEach(a => {
+  agentState[a.id] = { prevStatus: null, checksOk: 0, checksFail: 0, lastCheck: null };
+});
+
+let logEntries = [];
+let countdown = INTERVAL;
+let timer = null;
+let deferredPrompt = null;
+let notifGranted = false;
+
+// ══════════════════════════════════════════════════
+// NOTIFICACIONES
+// ══════════════════════════════════════════════════
+function initNotifications() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    notifGranted = true;
+    setNotifStatus('🔔 Notificaciones activas', 'granted');
+  } else if (Notification.permission === 'default') {
+    document.getElementById('notif-banner').style.display = 'flex';
+  } else {
+    setNotifStatus('🔕 Notificaciones bloqueadas en el navegador', 'denied');
+  }
+  document.getElementById('notif-btn').addEventListener('click', async () => {
+    const perm = await Notification.requestPermission();
+    document.getElementById('notif-banner').style.display = 'none';
+    if (perm === 'granted') {
+      notifGranted = true;
+      setNotifStatus('🔔 Notificaciones activas', 'granted');
+      notify('Bot Monitor', '✅ Notificaciones activadas');
+    } else {
+      setNotifStatus('🔕 Notificaciones bloqueadas', 'denied');
+    }
+  });
+}
+
+function setNotifStatus(msg, cls) {
+  const el = document.getElementById('notif-status');
+  el.textContent = msg;
+  el.className = cls;
+  el.style.display = 'block';
+}
+
+function notify(title, body) {
+  if (!notifGranted) return;
+  try { new Notification(title, { body }); } catch(e) {}
+}
+
+function checkAndNotify(name, newSt, prevSt) {
+  if (prevSt === null) return;
+  if (newSt === prevSt) return;
+  if (newSt === 'offline') {
+    notify('⚠️ Agente caído', name + ' está OFFLINE');
+    addLog('🔔 Alerta: ' + name + ' OFFLINE', 'warn');
+  } else if (newSt === 'online' && prevSt === 'offline') {
+    notify('✅ Agente recuperado', name + ' volvió a ONLINE');
+    addLog('🔔 Alerta: ' + name + ' ONLINE', 'ok');
+  }
+}
+
+// ══════════════════════════════════════════════════
+// SUPABASE MENSAJES HOY
+// ══════════════════════════════════════════════════
+async function fetchMensajesHoy(agentId) {
+  const cfg = SUPABASE[agentId];
+  if (!cfg) return null;
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+  try {
+    const res = await fetch(
+      cfg.url + '/rest/v1/' + cfg.table + '?created_at=gte.' + hoy.toISOString() + '&select=id',
+      {
+        headers: {
+          'apikey': cfg.key,
+          'Authorization': 'Bearer ' + cfg.key,
+          'Prefer': 'count=exact',
+          'Range': '0-0'
+        },
+        signal: AbortSignal.timeout(6000)
+      }
+    );
+    if (!res.ok) return null;
+    const range = res.headers.get('content-range');
+    if (range) {
+      const total = range.split('/')[1];
+      return total === '*' ? null : parseInt(total);
+    }
+    return null;
+  } catch { return null; }
+}
+
+// ══════════════════════════════════════════════════
+// PWA INSTALL
+// ══════════════════════════════════════════════════
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('install-banner').style.display = 'flex';
+});
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') document.getElementById('install-banner').style.display = 'none';
+  deferredPrompt = null;
+});
+
+// ══════════════════════════════════════════════════
+// RELOJ
+// ══════════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('hdr-clock').textContent = now.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('hdr-date').textContent = now.toLocaleDateString('es-CL',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ══════════════════════════════════════════════════
+// BUILD CARDS
+// ══════════════════════════════════════════════════
+function buildAgentCards() {
+  const container = document.getElementById('agents-container');
+  container.innerHTML = '<div class="section-label">// AGENTES ACTIVOS</div>';
+  AGENTS.forEach(agent => {
+    const card = document.createElement('div');
+    card.className = 'agent-card checking';
+    card.id = 'card-' + agent.id;
+    const hasSupa = !!SUPABASE[agent.id];
+    const msgsRow = hasSupa ? `
+      <div class="agent-msgs">
+        <div class="msgs-icon">💬</div>
+        <div class="msgs-label">MENSAJES HOY</div>
+        <div class="msgs-val">
+          <span class="msgs-count" id="msgs-${agent.id}">—</span>
+          <span class="msgs-sub">msgs</span>
+        </div>
+      </div>` : '';
+    const epRows = agent.endpoints.map(ep => `
+      <div class="ep-row checking" id="eprow-${agent.id}-${ep.key}">
+        <div class="ep-indicator checking" id="epind-${agent.id}-${ep.key}"></div>
+        <div class="ep-label">${ep.label}</div>
+        <div class="ep-url">${ep.url}</div>
+        <div class="ep-right">
+          <div class="ep-status checking" id="epst-${agent.id}-${ep.key}">—</div>
+          <div class="ep-lat" id="eplat-${agent.id}-${ep.key}">— ms</div>
+        </div>
+      </div>`).join('');
+    card.innerHTML = `
+      <div class="agent-head">
+        <div class="agent-emoji">${agent.emoji}</div>
+        <div class="agent-info">
+          <div class="agent-name">${agent.name}</div>
+          <div class="agent-desc">${agent.stack}</div>
+        </div>
+        <div class="agent-badge checking" id="badge-${agent.id}">
+          <div class="badge-dot"></div>
+          <span id="badge-text-${agent.id}">—</span>
+        </div>
+      </div>
+      ${msgsRow}
+      <div class="ep-list">${epRows}</div>
+      <div class="agent-foot">
+        <div class="agent-uptime">OK: <span id="aok-${agent.id}">—</span> &nbsp;|&nbsp; FAIL: <span id="afail-${agent.id}">—</span></div>
+        <div class="agent-last" id="alast-${agent.id}">verificando...</div>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════════
+// CHECK ENDPOINT
+// ══════════════════════════════════════════════════
+async function checkEndpoint(ep) {
+  const start = performance.now();
+  try {
+    const res = await fetch(ep.url, { method: ep.method, signal: AbortSignal.timeout(8000) });
+    const latency = Math.round(performance.now() - start);
+    const ok = ep.expectAny ? true : (res.status >= 200 && res.status < 300);
+    return { ok, status: res.status, latency };
+  } catch {
+    return { ok: false, status: null, latency: Math.round(performance.now() - start) };
+  }
+}
+
+// ══════════════════════════════════════════════════
+// RENDER AGENTE
+// ══════════════════════════════════════════════════
+function renderAgent(agent, results) {
+  const state = agentState[agent.id];
+  const allOk = results.every(r => r.ok);
+  const anyOk = results.some(r => r.ok);
+  const st = allOk ? 'online' : anyOk ? 'partial' : 'offline';
+
+  checkAndNotify(agent.name, st, state.prevStatus);
+  state.prevStatus = st;
+
+  document.getElementById('card-' + agent.id).className = 'agent-card ' + st;
+  document.getElementById('badge-' + agent.id).className = 'agent-badge ' + st;
+  document.getElementById('badge-text-' + agent.id).textContent = st === 'online' ? 'ONLINE' : st === 'offline' ? 'OFFLINE' : 'PARCIAL';
+
+  agent.endpoints.forEach((ep, i) => {
+    const r = results[i];
+    const es = r.ok ? 'online' : 'offline';
+    document.getElementById('eprow-' + agent.id + '-' + ep.key).className = 'ep-row ' + es;
+    document.getElementById('epind-' + agent.id + '-' + ep.key).className = 'ep-indicator ' + es;
+    const stEl = document.getElementById('epst-' + agent.id + '-' + ep.key);
+    stEl.className = 'ep-status ' + es;
+    stEl.textContent = r.status ? 'HTTP ' + r.status : 'OFFLINE';
+    document.getElementById('eplat-' + agent.id + '-' + ep.key).textContent = r.latency + ' ms';
+  });
+
+  if (allOk) state.checksOk++; else state.checksFail++;
+  state.lastCheck = new Date().toLocaleTimeString('es-CL');
+  document.getElementById('aok-' + agent.id).textContent = state.checksOk;
+  document.getElementById('afail-' + agent.id).textContent = state.checksFail;
+  document.getElementById('alast-' + agent.id).textContent = state.lastCheck;
+  return st;
+}
+
+// ══════════════════════════════════════════════════
+// SUMMARY
+// ══════════════════════════════════════════════════
+function renderSummary(statuses) {
+  const total = statuses.length;
+  const online = statuses.filter(s => s === 'online').length;
+  const offline = statuses.filter(s => s !== 'online').length;
+  document.getElementById('sum-total').textContent = total;
+  const okEl = document.getElementById('sum-ok');
+  okEl.textContent = online;
+  okEl.className = 'sum-val ' + (online === total ? 'all-ok' : online > 0 ? 'neutral' : 'has-fail');
+  const failEl = document.getElementById('sum-fail');
+  failEl.textContent = offline;
+  failEl.className = 'sum-val ' + (offline === 0 ? 'all-ok' : 'has-fail');
+}
+
+// ══════════════════════════════════════════════════
+// LOG
+// ══════════════════════════════════════════════════
+function addLog(msg, type) {
+  type = type || 'ok';
+  const now = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  logEntries.unshift({ time: now, msg, type });
+  if (logEntries.length > 30) logEntries.pop();
+  document.getElementById('log-body').innerHTML = logEntries.map(e =>
+    '<div class="log-entry ' + e.type + '"><span class="log-t">[' + e.time + ']</span><span class="log-m">' + e.msg + '</span></div>'
+  ).join('');
+  document.getElementById('log-count').textContent = logEntries.length + ' eventos';
+}
+
+// ══════════════════════════════════════════════════
+// RUN ALL CHECKS
+// ══════════════════════════════════════════════════
+async function runAllChecks() {
+  const btn = document.getElementById('btn-check');
+  btn.disabled = true;
+  btn.textContent = '⟳ VERIFICANDO...';
+
+  AGENTS.forEach(agent => {
+    document.getElementById('card-' + agent.id).className = 'agent-card checking';
+    document.getElementById('badge-' + agent.id).className = 'agent-badge checking';
+    document.getElementById('badge-text-' + agent.id).textContent = '...';
+    agent.endpoints.forEach(ep => {
+      document.getElementById('eprow-' + agent.id + '-' + ep.key).className = 'ep-row checking';
+      document.getElementById('epind-' + agent.id + '-' + ep.key).className = 'ep-indicator checking';
+      document.getElementById('epst-' + agent.id + '-' + ep.key).textContent = '...';
+    });
+  });
+
+  const endpointResults = await Promise.all(
+    AGENTS.map(agent => Promise.all(agent.endpoints.map(ep => checkEndpoint(ep))))
+  );
+  const msgResults = await Promise.all(AGENTS.map(a => fetchMensajesHoy(a.id)));
+
+  const statuses = [];
+  AGENTS.forEach((agent, i) => {
+    const results = endpointResults[i];
+    const st = renderAgent(agent, results);
+    statuses.push(st);
+
+    const msgEl = document.getElementById('msgs-' + agent.id);
+    if (msgEl) msgEl.textContent = msgResults[i] !== null ? msgResults[i] : '—';
+
+    const allOk = results.every(r => r.ok);
+    const lats = results.map((r,j) => agent.endpoints[j].label + ':' + r.latency + 'ms').join(' ');
+    const msgsStr = msgResults[i] !== null ? ' | 💬' + msgResults[i] : '';
+    if (allOk) {
+      addLog('✓ ' + agent.name + ' — ' + lats + msgsStr, 'ok');
+    } else {
+      const fails = results.map((r,j) => r.ok ? null : agent.endpoints[j].label + ' OFFLINE').filter(Boolean).join(', ');
+      addLog('✕ ' + agent.name + ' — ' + fails + msgsStr, 'fail');
+    }
+  });
+
+  renderSummary(statuses);
+  btn.disabled = false;
+  btn.textContent = '↻ VERIFICAR AHORA';
+  resetCountdown();
+}
+
+// ══════════════════════════════════════════════════
+// COUNTDOWN
+// ══════════════════════════════════════════════════
+function resetCountdown() {
+  clearInterval(timer);
+  countdown = INTERVAL;
+  updateCountdown();
+  timer = setInterval(() => { countdown--; updateCountdown(); if(countdown<=0) runAllChecks(); }, 1000);
+}
+function updateCountdown() {
+  document.getElementById('auto-fill').style.width = (countdown/INTERVAL*100) + '%';
+  document.getElementById('auto-count').textContent = countdown + 's';
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+buildAgentCards();
+initNotifications();
+addLog('Panel iniciado — verificando agentes...', 'info');
+runAllChecks();
+</script>
+</body>
+</html>
