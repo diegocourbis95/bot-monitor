@@ -216,6 +216,33 @@ const AGENTS = [
     endpoints: [
       { key:'webhook', label:'WEBHOOK', url:'https://rrggprueba-n8n.dj1kp9.easypanel.host/webhook/health', method:'GET', expectAny:true }
     ]
+  },
+  {
+    id: 'retrogaming-supervisor',
+    name: 'RETROGAMING SUPERVISOR',
+    emoji: '💬',
+    stack: 'Python / FastAPI',
+    endpoints: [
+      { key:'health', label:'HEALTH', url:'https://supervisor.retrogaming.cl/', method:'GET', expectAny:false }
+    ]
+  },
+  {
+    id: 'retrogaming-crm-api',
+    name: 'RETROGAMING CRM API',
+    emoji: '🗃️',
+    stack: 'Python / FastAPI',
+    endpoints: [
+      { key:'health', label:'HEALTH', url:'https://api.retrogaming.cl/health', method:'GET', expectAny:false }
+    ]
+  },
+  {
+    id: 'erp-backend',
+    name: 'ERP BACKEND',
+    emoji: '💼',
+    stack: 'Node.js / Express',
+    endpoints: [
+      { key:'health', label:'HEALTH', url:'https://erp.retrogaming.cl/health', method:'GET', expectAny:false }
+    ]
   }
 ];
 
