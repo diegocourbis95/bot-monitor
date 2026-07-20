@@ -199,25 +199,6 @@
 // ══════════════════════════════════════════════════
 const AGENTS = [
   {
-    id: 'aironbot',
-    name: 'COMERCIAL AIRONBOT',
-    emoji: '🏍',
-    stack: 'Python / FastAPI',
-    endpoints: [
-      { key:'health',  label:'HEALTH',  url:'https://iron.retrogaming.cl/health',  method:'GET', expectAny:false },
-      { key:'webhook', label:'WEBHOOK', url:'https://iron.retrogaming.cl/webhook', method:'GET', expectAny:true  }
-    ]
-  },
-  {
-    id: 'retrogaming',
-    name: 'RETROGAMING SPA',
-    emoji: '🎮',
-    stack: 'n8n / EasyPanel',
-    endpoints: [
-      { key:'webhook', label:'WEBHOOK', url:'https://rrggprueba-n8n.dj1kp9.easypanel.host/webhook/health', method:'GET', expectAny:true }
-    ]
-  },
-  {
     id: 'retrogaming-supervisor',
     name: 'RETROGAMING SUPERVISOR',
     emoji: '💬',
@@ -249,18 +230,7 @@ const AGENTS = [
 // ══════════════════════════════════════════════════
 // SUPABASE
 // ══════════════════════════════════════════════════
-const SUPABASE = {
-  aironbot: {
-    url: 'https://iqxqxbjuwgmxdemmaasv.supabase.co',
-    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxeHF4Ymp1d2dteGRlbW1hYXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwOTk2NDUsImV4cCI6MjA5MzY3NTY0NX0.zdR0gETzuRo1nj7CLtHj7tcsFnPkg--km1fo_BogtFA',
-    table: 'mensajes'
-  },
-  retrogaming: {
-    url: 'https://txbtmshmtustcrtpjqaj.supabase.co',
-    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4YnRtc2htdHVzdGNydHBqcWFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4OTAyODAsImV4cCI6MjA5MjQ2NjI4MH0.QtiBvL60BvP0fEqZa2cfo1Lc-65U-F0JCAh9jJzeShM',
-    table: 'conversaciones'
-  }
-};
+const SUPABASE = {};
 
 const INTERVAL = 30;
 
